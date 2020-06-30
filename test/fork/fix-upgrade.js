@@ -110,19 +110,18 @@ describe('fix upgrade', function () {
   this.timeout(5000000);
   this.slow(2000);
 
+
   it('upgrades old system', async function () {
     const master = await NXMaster.at(MASTER_ADDRESS);
 
     const mr = await MemberRoles.at(await master.getLatestAddress(hex('MR')));
-    // const tk = await NXMToken.at(await master.dAppToken());
-    const gv = await Governance.at(await master.getLatestAddress(hex('GV')));
-    // const pc = await ProposalCategory.at(await master.getLatestAddress('PC'));
-    // const td = await TokenData.at(await master.getLatestAddress('TD'));
 
-    // const directMR = getWeb3Contract('MR', versionData, directWeb3);
-    // const directTD = getWeb3Contract('TD', versionData, directWeb3);
-    // const directTF = getWeb3Contract('TF', versionData, directWeb3);
-    // const directTK = getWeb3Contract('NXMTOKEN', versionData, directWeb3);
+    const gv = await Governance.at(await master.getLatestAddress(hex('GV')));
+    const tc = await TokenController.at(await master.getLatestAddress(hex('TC')));
+    const cr = await ClaimsReward.at(await master.getLatestAddress(hex('CR')));
+    const tf = await ClaimsReward.at(await master.getLatestAddress(hex('TF')));
+
+    console.log(`Loaded contracts..`);
 
     const owners = await mr.members('3');
     const firstBoardMember = owners.memberArray[0];
@@ -141,28 +140,24 @@ describe('fix upgrade', function () {
       await web3.eth.sendTransaction({ from: funder, to: member, value: ether('100') });
     }
 
-    const newTC = await TokenController.new({ from: firstBoardMember });
+    console.log(`Deploying new ClaimsReward..`);
+    const newCR = await ClaimsReward.new({ from: firstBoardMember });
 
-    console.log(`PS address: ${await master.getLatestAddress(hex('PS'))}`);
-
-    const upgradeMultipleImplementationsActionHash = encode1(
+    const upgradeMultipleContractsActionHash = encode1(
       ['bytes2[]', 'address[]'],
-      [[hex('TC')], [newTC.address]],
+      [[hex('CR')], [newCR.address]],
     );
 
     await submitGovernanceProposal(
-      newProxyContractAddressUpgradeCategoryId,
-      upgradeMultipleImplementationsActionHash, boardMembers, gv, secondBoardMember,
+      newContractAddressUpgradeCategoryId, upgradeMultipleContractsActionHash, boardMembers, gv, secondBoardMember,
     );
+    const storedCRAddress = await master.getLatestAddress(hex('CR'));
 
-    const tcProxy = await UpgradeabilityProxy.at(await master.getLatestAddress(hex('TC')));
-    const storedNewTCAddress = await tcProxy.implementation();
-    assert.equal(storedNewTCAddress, newTC.address);
-    console.log(`Successfully deployed new TC.`);
-    const currentTC = TokenController.at(tcProxy.address);
+    assert.equal(storedCRAddress, newCR.address);
 
-    console.log(`currentTC ${currentTC.address}`);
-    console.log(`currentTC.pooledStaking ${await currentTC.pooledStaking()}`);
-    console.log(`currentTC.minCALockTime ${await currentTC.minCALockTime()}`);
+    const crPooledStakingAddress = await web3.eth.getStorageAt(newCR.address, 13);
+    const psAddress = await master.getLatestAddress(hex('PS'));
+
+    assert.equal(crPooledStakingAddress.toLowerCase(), psAddress.toLowerCase());
   })
 })
