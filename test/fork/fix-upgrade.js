@@ -105,15 +105,19 @@ async function submitGovernanceProposal (categoryId, actionHash, members, gv, su
   assert.equal(proposal[2].toNumber(), 3);
 }
 
-describe('migration', function () {
+describe('fix upgrade', function () {
+  // this.timeout(0);
+  this.timeout(5000000);
+  this.slow(2000);
+
   it('upgrades old system', async function () {
     const master = await NXMaster.at(MASTER_ADDRESS);
 
-    const mr = await MemberRoles.at(master.getLatestAddress('MR'));
-    const tk = await NXMToken.at(master.dAppToken());
-    const gv = await Governance.at(master.getLatestAddress('GV'));
-    const pc = await ProposalCategory.at(master.getLatestAddress('PC'));
-    const td = await TokenData.at(master.getLatestAddress('TD'));
+    const mr = await MemberRoles.at(await master.getLatestAddress(hex('MR')));
+    // const tk = await NXMToken.at(await master.dAppToken());
+    const gv = await Governance.at(await master.getLatestAddress(hex('GV')));
+    // const pc = await ProposalCategory.at(await master.getLatestAddress('PC'));
+    // const td = await TokenData.at(await master.getLatestAddress('TD'));
 
     // const directMR = getWeb3Contract('MR', versionData, directWeb3);
     // const directTD = getWeb3Contract('TD', versionData, directWeb3);
