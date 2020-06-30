@@ -28,6 +28,19 @@ function chunk (arr, chunkSize) {
 }
 
 
+
+async function getStakerContractStakes(pooledStaking, member) {
+  const contracts = await pooledStaking.stakerContractsArray(member);
+  for (let contract of contracts) {
+    const contractStake = (await pooledStaking.stakerContractStake(member, contract)).toString();
+    console.log({
+      member,
+      contract,
+      contractStake
+    });
+  }
+}
+
 async function main() {
 
 
@@ -40,19 +53,50 @@ async function main() {
 
   console.log(`Loading master at ${MASTER_ADDRESS}..`)
   const master = loader.fromArtifact('MasterMock', MASTER_ADDRESS);
+
+  const roxana = '0x144aAD1020cbBFD2441443721057e1eC0577a639';
+  // const roxanaIsMember = await master.isMember(roxana);
+  // console.log(`roxanaIsMember ${roxanaIsMember}`);
+  const tcAddress = await master.getLatestAddress(hex('TC'));
+  console.log(`tcAddress ${tcAddress}`);
+  const tokenController = loader.fromArtifact('TokenController', tcAddress);
+
+  const mrAddress = await master.getLatestAddress(hex('MR'));
+  console.log(`mrAddress ${mrAddress}`);
+  const mr = loader.fromArtifact('MemberRoles', mrAddress);
+  console.log(` master address. mr: ${await mr.ms()}`);
+
+  const tokenFunctions = loader.fromArtifact('TokenFunctions', await master.getLatestAddress(hex('TF')));
+  // console.log(` TokenFunctions.ps= ${await tokenFunctions.pooledStaking()}`);
+
   const psAddress = await master.getLatestAddress(hex('PS'));
   console.log(`Loading PooledStaking at ${psAddress}..`)
   const pooledStaking = loader.fromArtifact('PooledStaking', psAddress);
+  await getStakerContractStakes(pooledStaking, roxana);
+  return;
+
+  // console.log(`pooledStaking.master ${await pooledStaking.master()}`);
+  // console.log(`pooledStaking.tokenController ${await pooledStaking.tokenController()}`);
+  // console.log(`pooledStaking.token ${await pooledStaking.token()}`);
+
+  const now = new Date().getTime();
+
+  console.log(await tokenController.pooledStaking());
+  console.log(await tokenController.minCALockTime());
+  console.log(await tokenController.token());
+  // const totalLockeBalanceRox = await tokenController.totalLockedBalance(roxana, now.toString());
+  // console.log(`totalLockeBalanceRox ${totalLockeBalanceRox}`);
+
+
 
   const nxmToken = loader.fromArtifact('NXMToken', await master.dAppToken());
 
   const psBalance = await nxmToken.balanceOf(pooledStaking.address);
   console.log(`psBalance ${psBalance}`);
 
-
-  console.log(await master.getLatestAddress(hex('MR')));
   // const mr = loader.fromArtifact('MemberRoles', await master.getLatestAddress(hex('MR')));
   const mrWeb3 = new web3.eth.Contract(require('../build/contracts/MemberRoles').abi, await master.getLatestAddress(hex('MR')));
+  console.log(`roxanaIsMember ${roxanaIsMember}`);
   //const { memberArray: members }  = await mrWeb3.methods.members('2').call();
   const members = fs.readFileSync('./members.txt', 'utf8').split(',').map(a => a.trim());
   console.log(`members: ${members.length}`);
