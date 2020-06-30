@@ -51,41 +51,58 @@ async function main() {
     defaultGasPrice: 6e9, // 5 gwei
   }).truffle;
 
+
   console.log(`Loading master at ${MASTER_ADDRESS}..`)
   const master = loader.fromArtifact('MasterMock', MASTER_ADDRESS);
 
+
+  // console.log(`Expected PS: ${await master.getLatestAddress(hex('PS'))}`);
+  // const tfAddress = await master.getLatestAddress(hex('TF'));
+  //
+  // console.log('TF:');
+  // console.log(await web3.eth.getStorageAt(tfAddress, 10));
+  // console.log(await web3.eth.getStorageAt(tfAddress, 11));
+  //
+  // console.log('CR:');
+  // const crAddress = await master.getLatestAddress(hex('CR'));
+  // console.log(await web3.eth.getStorageAt(crAddress, 12));
+  // console.log(await web3.eth.getStorageAt(crAddress, 13));
+  //
+  // const tc = loader.fromArtifact('TokenController', await master.getLatestAddress(hex('TC')));
+  // console.log(`TokenController.pooledStaking = ${await tc.pooledStaking()}`);
+
   const roxana = '0x144aAD1020cbBFD2441443721057e1eC0577a639';
-  // const roxanaIsMember = await master.isMember(roxana);
-  // console.log(`roxanaIsMember ${roxanaIsMember}`);
+
+  const hugh = '0x87b2a7559d85f4653f13e6546a14189cd5455d45';
+
   const tcAddress = await master.getLatestAddress(hex('TC'));
   console.log(`tcAddress ${tcAddress}`);
   const tokenController = loader.fromArtifact('TokenController', tcAddress);
 
   const mrAddress = await master.getLatestAddress(hex('MR'));
-  console.log(`mrAddress ${mrAddress}`);
   const mr = loader.fromArtifact('MemberRoles', mrAddress);
-  console.log(` master address. mr: ${await mr.ms()}`);
 
   const tokenFunctions = loader.fromArtifact('TokenFunctions', await master.getLatestAddress(hex('TF')));
-  // console.log(` TokenFunctions.ps= ${await tokenFunctions.pooledStaking()}`);
 
   const psAddress = await master.getLatestAddress(hex('PS'));
   console.log(`Loading PooledStaking at ${psAddress}..`)
   const pooledStaking = loader.fromArtifact('PooledStaking', psAddress);
-  await getStakerContractStakes(pooledStaking, roxana);
-  return;
 
-  // console.log(`pooledStaking.master ${await pooledStaking.master()}`);
-  // console.log(`pooledStaking.tokenController ${await pooledStaking.tokenController()}`);
-  // console.log(`pooledStaking.token ${await pooledStaking.token()}`);
+  console.log(`HUGH:`);
+  await getStakerContractStakes(pooledStaking, hugh);
+  console.log(`==========================================`);
+  console.log(`ROXANA:`);
+  await getStakerContractStakes(pooledStaking, roxana);
+
+  console.log(`pooledStaking.master ${await pooledStaking.master()}`);
+  console.log(`pooledStaking.tokenController ${await pooledStaking.tokenController()}`);
+  console.log(`pooledStaking.token ${await pooledStaking.token()}`);
 
   const now = new Date().getTime();
 
   console.log(await tokenController.pooledStaking());
   console.log(await tokenController.minCALockTime());
   console.log(await tokenController.token());
-  // const totalLockeBalanceRox = await tokenController.totalLockedBalance(roxana, now.toString());
-  // console.log(`totalLockeBalanceRox ${totalLockeBalanceRox}`);
 
 
 
@@ -96,7 +113,6 @@ async function main() {
 
   // const mr = loader.fromArtifact('MemberRoles', await master.getLatestAddress(hex('MR')));
   const mrWeb3 = new web3.eth.Contract(require('../build/contracts/MemberRoles').abi, await master.getLatestAddress(hex('MR')));
-  console.log(`roxanaIsMember ${roxanaIsMember}`);
   //const { memberArray: members }  = await mrWeb3.methods.members('2').call();
   const members = fs.readFileSync('./members.txt', 'utf8').split(',').map(a => a.trim());
   console.log(`members: ${members.length}`);
