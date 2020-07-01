@@ -41,6 +41,22 @@ async function getStakerContractStakes(pooledStaking, member) {
   }
 }
 
+async function checkTCTransfer(master, loader) {
+  const tk = loader.fromArtifact('NXMToken', await master.dAppToken());
+  const events = await tk.getPastEvents('Transfer', { fromBlock: 10366000, toBlock: 10367060  });
+
+  // https://etherscan.io/address/0x1c1bc0cdd905b29494cbd485657dae8a95f30ec8
+  const transfers  = events
+    .filter(e => e.args.from === '0x5407381b6c251cFd498ccD4A1d877739CB7960B8')
+    .filter(e => e.args.to !== '0x0000000000000000000000000000000000000000')
+    .map(e => e.args.value);
+
+  const sumFromTC = transfers.reduce((a, b) => a.add(b), new BN('0'))
+  console.log(`sumFromTC ${sumFromTC.toString()}`);
+
+  console.log(await tk.balanceOf( await master.getLatestAddress(hex('PS'))));
+}
+
 async function main() {
 
 
@@ -55,21 +71,21 @@ async function main() {
   console.log(`Loading master at ${MASTER_ADDRESS}..`)
   const master = loader.fromArtifact('MasterMock', MASTER_ADDRESS);
 
+  console.log(`Expected PS: ${await master.getLatestAddress(hex('PS'))}`);
+  const tfAddress = await master.getLatestAddress(hex('TF'));
 
-  // console.log(`Expected PS: ${await master.getLatestAddress(hex('PS'))}`);
-  // const tfAddress = await master.getLatestAddress(hex('TF'));
-  //
-  // console.log('TF:');
-  // console.log(await web3.eth.getStorageAt(tfAddress, 10));
-  // console.log(await web3.eth.getStorageAt(tfAddress, 11));
-  //
-  // console.log('CR:');
-  // const crAddress = await master.getLatestAddress(hex('CR'));
-  // console.log(await web3.eth.getStorageAt(crAddress, 12));
-  // console.log(await web3.eth.getStorageAt(crAddress, 13));
-  //
-  // const tc = loader.fromArtifact('TokenController', await master.getLatestAddress(hex('TC')));
-  // console.log(`TokenController.pooledStaking = ${await tc.pooledStaking()}`);
+  console.log('TF:');
+  console.log(await web3.eth.getStorageAt(tfAddress, 10));
+  console.log(await web3.eth.getStorageAt(tfAddress, 11));
+
+  console.log('CR:');
+  const crAddress = await master.getLatestAddress(hex('CR'));
+  console.log(await web3.eth.getStorageAt(crAddress, 12));
+  console.log(await web3.eth.getStorageAt(crAddress, 13));
+
+  const tc = loader.fromArtifact('TokenController', await master.getLatestAddress(hex('TC')));
+  console.log(`TokenController.pooledStaking = ${await tc.pooledStaking()}`);
+  return;
 
   const roxana = '0x144aAD1020cbBFD2441443721057e1eC0577a639';
 
