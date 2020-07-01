@@ -41,6 +41,61 @@ async function getStakerContractStakes(pooledStaking, member) {
   }
 }
 
+async function checkHistoricalStakingData(master, web3) {
+  const tk = new web3.eth.Contract(require('../build/contracts/NXMToken').abi, await master.dAppToken());
+
+  const migrationStartBlock = 10362897;
+  const tcAddress = await master.getLatestAddress(hex('TC'));
+  const crAddress = await master.getLatestAddress(hex('CR'));
+
+
+  // await master.getLatestAddress(hex('TC'))
+
+  // let bal;
+  // bal = await tk.methods.totalSupply().call(undefined);
+  // console.log(`bal=${bal}`);
+  //
+  // console.log(`PRE-MIGRATION`);
+  // let [totalSupply, tcBal] = await Promise.all([
+  //   tk.methods.totalSupply().call(undefined, migrationStartBlock),
+  //   tk.methods.balanceOf(tcAddress).call(undefined, migrationStartBlock)
+  //   ]);
+  // console.log(`bal pre-migration=${totalSupply}`);
+  // console.log(`TC.bal = ${tcBal}`);
+
+
+  const members = fs.readFileSync('./members.txt', 'utf8').split(',').map(a => a.trim());
+  console.log(`members: ${members.length}`);
+
+  const masterWeb3 = new web3.eth.Contract(require('../build/contracts/NXMaster').abi, MASTER_ADDRESS);
+
+  const oldTFAddress = await masterWeb3.methods.getLatestAddress(hex('TF'))
+    .call(undefined, migrationStartBlock);
+  const oldTF = new web3.eth.Contract(require('../TokenFunctions').abi, oldTFAddress);
+  let totalUnlockable = new BN('0');
+
+  const chunks = chunk(members, 50);
+  let batchCount = 0;
+  for (let chunk of chunks) {
+    console.log(`Fetching batch ${batchCount++}..`);
+    await Promise.all(chunk.map(async (member) => {
+      const unlockable = await oldTF.methods.getStakerAllUnlockableStakedTokens(member)
+        .call(undefined, migrationStartBlock);
+
+      totalUnlockable = totalUnlockable.add(new BN(unlockable));
+      console.log(`${member}: ${unlockable}`);
+    }));
+  }
+  console.log(`totalUnlockable ${totalUnlockable.toString()}`);
+  console.log(`DONE`);
+
+  // const blockNumber = 8065000;
+  // const block = await web3.eth.getBlock(blockNumber);
+  // console.log(new Date(block.timestamp * 1000));
+  // bal = await tk.methods.totalSupply().call(undefined, blockNumber);
+  // console.log(`bal=${bal}`);
+}
+
 async function checkTCTransfer(master, loader) {
   const tk = loader.fromArtifact('NXMToken', await master.dAppToken());
   const events = await tk.getPastEvents('Transfer', { fromBlock: 10366000, toBlock: 10367060  });
@@ -70,6 +125,9 @@ async function main() {
 
   console.log(`Loading master at ${MASTER_ADDRESS}..`)
   const master = loader.fromArtifact('MasterMock', MASTER_ADDRESS);
+
+  await checkHistoricalStakingData(master, web3);
+  return;
 
   console.log(`Expected PS: ${await master.getLatestAddress(hex('PS'))}`);
   const tfAddress = await master.getLatestAddress(hex('TF'));
