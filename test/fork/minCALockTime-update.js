@@ -132,15 +132,48 @@ describe('upgrade minCALockTime', function () {
       await web3.eth.sendTransaction({ from: funder, to: member, value: ether('100') });
     }
 
+    const newPC = await ProposalCategory.new({ from: firstBoardMember });
+
+    const upgradeMultipleImplementationsActionHash = encode1(
+      ['bytes2[]', 'address[]'],
+      [[hex('PC')], [newPC.address]],
+    );
+
+    await submitGovernanceProposal(
+      newProxyContractAddressUpgradeCategoryId,
+      upgradeMultipleImplementationsActionHash, boardMembers, gv, secondBoardMember,
+    );
+
+    const pcProxy = await UpgradeabilityProxy.at(await master.getLatestAddress(hex('PC')));
+    const storedNewPCAddress = await pcProxy.implementation();
+    assert.equal(storedNewPCAddress, newPC.address);
+
+
     const newCategoryCategoryId = 3;
     let updateUintParametersForTokenControllerCategoryId = await pc.totalCategories();
-    let actionHash = encode(
-      'newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)',
+    // let actionHash = encode(
+    //   'newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)',
+    //   'Description',
+    //   1,
+    //   60,
+    //   15,
+    //   [2],
+    //   604800,
+    //   '',
+    //   '',
+    //   hex('TC'),
+    //   [0, 0, 0, 0],
+    //   'updateUintParameters(bytes8,uint256)'
+    // );
+    //
+    // await submitGovernanceProposal(newCategoryCategoryId, actionHash, boardMembers, gv, secondBoardMember);
+
+    await pc.newCategory(
       'Description',
       1,
       60,
       15,
-      [1],
+      [2],
       604800,
       '',
       tc.address,
@@ -148,8 +181,6 @@ describe('upgrade minCALockTime', function () {
       [0, 0, 0, 0],
       'updateUintParameters(bytes8,uint256)'
     );
-
-    await submitGovernanceProposal(newCategoryCategoryId, actionHash, boardMembers, gv, secondBoardMember);
     console.log(`Successfully added newCategory.`);
 
     actionHash = encode(
@@ -165,16 +196,5 @@ describe('upgrade minCALockTime', function () {
 
     const updatedminCALockTime = await tc.minCALockTime();
     console.log(`minCALockTime= ${updatedminCALockTime}`);
-
-    // const upgradeMultipleContractsActionHash = encode1(
-    //   ['bytes2[]', 'address[]'],
-    //   [[hex('TF'), hex('CR'), hex('QT')], [newTF.address, newCR.address, newQT.address]],
-    // );
-    //
-    // await submitGovernanceProposal(
-    //   newContractAddressUpgradeCategoryId, upgradeMultipleContractsActionHash, boardMembers, gv, secondBoardMember,
-    // );
-    //
-
   })
 })
