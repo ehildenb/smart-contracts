@@ -101,14 +101,9 @@ describe('upgrade minCALockTime', function () {
     }
 
     const mr = await MemberRoles.at(nameToAddressMap['MR']);
-    const tk = await NXMToken.at(nameToAddressMap['NXMTOKEN']);
     const gv = await Governance.at(nameToAddressMap['GV']);
     const pc = await ProposalCategory.at(nameToAddressMap['PC']);
-    const td = await TokenData.at(nameToAddressMap['TD']);
     const tc = await TokenController.at(nameToAddressMap['TC']);
-
-    const owners = await mr.members('3');
-    const firstBoardMember = owners.memberArray[0];
 
     const members = await mr.members('1');
     const boardMembers = members.memberArray;
@@ -126,16 +121,21 @@ describe('upgrade minCALockTime', function () {
 
     const newCategoryCategoryId = 3;
     let updateUintParametersForTokenControllerCategoryId = await pc.totalCategories();
+
+    /*
+      Model used:
+      https://app.govblocks.io/proposals/NEXUS-MUTUAL/69
+     */
     let actionHash = encode(
       'newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)',
       'Description',
-      1,
+      1, // Role ID authorised to vote
       60,
       15,
-      [2],
+      [2], //Role Ids allowed to create proposal
       604800,
       '',
-      '',
+      '', // address appears to be ok if blank
       hex('TC'),
       [0, 0, 0, 0],
       'updateUintParameters(bytes8,uint256)'
