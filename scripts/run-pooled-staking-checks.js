@@ -9,8 +9,7 @@ const MASTER_ADDRESS = '0x01bfd82675dbcc7762c84019ca518e701c0cd07e';
 const GWEI_IN_WEI = 10e9;
 
 
-const providerURL = 'https://mainnet.infura.io/v3/8c4d7fcf0426485db01dd6f4626c81a2';
-//const providerURL = 'https://parity.nexusmutual.io';
+const providerURL = process.env.PROVIDER_URL;
 
 
 const BN = Web3.utils.BN;
@@ -126,8 +125,13 @@ async function main() {
   console.log(`Loading master at ${MASTER_ADDRESS}..`)
   const master = loader.fromArtifact('MasterMock', MASTER_ADDRESS);
 
-  await checkHistoricalStakingData(master, web3);
+  const mrWeb3 = new web3.eth.Contract(require('../build/contracts/MemberRoles').abi, await master.getLatestAddress(hex('MR')));
+  const { memberArray: allMembers }  = await mrWeb3.methods.members('2').call();
+  console.log(`allMember = ${allMembers.length}`);
+
   return;
+  await checkHistoricalStakingData(master, web3);
+
 
   console.log(`Expected PS: ${await master.getLatestAddress(hex('PS'))}`);
   const tfAddress = await master.getLatestAddress(hex('TF'));
@@ -186,8 +190,6 @@ async function main() {
   console.log(`psBalance ${psBalance}`);
 
   // const mr = loader.fromArtifact('MemberRoles', await master.getLatestAddress(hex('MR')));
-  const mrWeb3 = new web3.eth.Contract(require('../build/contracts/MemberRoles').abi, await master.getLatestAddress(hex('MR')));
-  //const { memberArray: members }  = await mrWeb3.methods.members('2').call();
   const members = fs.readFileSync('./members.txt', 'utf8').split(',').map(a => a.trim());
   console.log(`members: ${members.length}`);
 
