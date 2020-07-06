@@ -25,14 +25,6 @@ const directWeb3 = new Web3(process.env.TEST_ENV_FORK);
 const newContractAddressUpgradeCategoryId = 29;
 const newProxyContractAddressUpgradeCategoryId = 5;
 const addNewInternalContractCategoryId = 34;
-const VALID_DAYS = 250;
-
-function getWeb3Contract (name, versionData, web3) {
-  const contractData = versionData.mainnet.abis.filter(abi => abi.code === name)[0];
-  const contract = new web3.eth.Contract(JSON.parse(contractData.contractAbi), contractData.address);
-  console.log(`Loaded contract ${name} at address ${contractData.address}`);
-  return contract;
-}
 
 
 async function submitGovernanceProposal (categoryId, actionHash, members, gv, submitter) {
@@ -82,7 +74,7 @@ async function submitGovernanceProposal (categoryId, actionHash, members, gv, su
   logEvents(await gv.closeProposal(proposalId, { from: submitter }));
 
   const proposal = await gv.proposal(proposalId);
-  // assert.equal(proposal[2].toNumber(), 3);
+  assert.equal(proposal[2].toNumber(), 3);
 }
 
 describe('upgrade minCALockTime', function () {
@@ -132,43 +124,10 @@ describe('upgrade minCALockTime', function () {
       await web3.eth.sendTransaction({ from: funder, to: member, value: ether('100') });
     }
 
-    const newPC = await ProposalCategory.new({ from: firstBoardMember });
-
-    const upgradeMultipleImplementationsActionHash = encode1(
-      ['bytes2[]', 'address[]'],
-      [[hex('PC')], [newPC.address]],
-    );
-
-    await submitGovernanceProposal(
-      newProxyContractAddressUpgradeCategoryId,
-      upgradeMultipleImplementationsActionHash, boardMembers, gv, secondBoardMember,
-    );
-
-    const pcProxy = await UpgradeabilityProxy.at(await master.getLatestAddress(hex('PC')));
-    const storedNewPCAddress = await pcProxy.implementation();
-    assert.equal(storedNewPCAddress, newPC.address);
-
-
     const newCategoryCategoryId = 3;
     let updateUintParametersForTokenControllerCategoryId = await pc.totalCategories();
-    // let actionHash = encode(
-    //   'newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)',
-    //   'Description',
-    //   1,
-    //   60,
-    //   15,
-    //   [2],
-    //   604800,
-    //   '',
-    //   '',
-    //   hex('TC'),
-    //   [0, 0, 0, 0],
-    //   'updateUintParameters(bytes8,uint256)'
-    // );
-    //
-    // await submitGovernanceProposal(newCategoryCategoryId, actionHash, boardMembers, gv, secondBoardMember);
-
-    await pc.newCategory(
+    let actionHash = encode(
+      'newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)',
       'Description',
       1,
       60,
@@ -176,17 +135,22 @@ describe('upgrade minCALockTime', function () {
       [2],
       604800,
       '',
-      tc.address,
+      '',
       hex('TC'),
       [0, 0, 0, 0],
       'updateUintParameters(bytes8,uint256)'
     );
+
+    await submitGovernanceProposal(newCategoryCategoryId, actionHash, boardMembers, gv, secondBoardMember);
+
     console.log(`Successfully added newCategory.`);
+
+    const minCALockTimeInDays = 30;
 
     actionHash = encode(
       'updateUintParameters(bytes8,uint)',
       hex('MNCLT'),
-      35
+      minCALockTimeInDays
     );
 
     console.log(`Using category id ${updateUintParametersForTokenControllerCategoryId}`);
@@ -195,6 +159,6 @@ describe('upgrade minCALockTime', function () {
     );
 
     const updatedminCALockTime = await tc.minCALockTime();
-    console.log(`minCALockTime= ${updatedminCALockTime}`);
+    assert.equal(updatedminCALockTime, (minCALockTimeInDays * 24 * 60 * 60).toString());
   })
 })
