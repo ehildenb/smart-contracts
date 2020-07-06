@@ -144,28 +144,17 @@ describe('upgrade minCALockTime', function () {
       604800,
       '',
       tc.address,
-      toHex('EX'),
+      hex('EX'),
       [0, 0, 0, 0],
       'updateUintParameters(bytes8,uint256)'
     );
 
     await submitGovernanceProposal(newCategoryCategoryId, actionHash, boardMembers, gv, secondBoardMember);
-
-    let p1 = await gv.getProposalLength();
-    await gv.createProposalwithSolution(
-      'Add new category',
-      'Add new category',
-      'AddnewCategory',
-      3,
-      'Add new category',
-      actionHash
-    );
-    await gv.submitVote(p1.toNumber(), 1);
-    await gv.closeProposal(p1.toNumber());
+    console.log(`Successfully added newCategory.`);
 
     actionHash = encode(
       'updateUintParameters(bytes8,uint)',
-      toHex('MNCLT'),
+      hex('MNCLT'),
       35
     );
 
