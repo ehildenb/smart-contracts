@@ -128,17 +128,17 @@ describe('upgrade minCALockTime', function () {
      */
     let actionHash = encode(
       'newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)',
-      'Description',
-      1, // Role ID authorised to vote
-      60,
-      15,
-      [2], //Role Ids allowed to create proposal
-      604800,
-      '',
-      '', // address appears to be ok if blank
-      hex('TC'),
-      [0, 0, 0, 0],
-      'updateUintParameters(bytes8,uint256)'
+      'updateUintParameters for TokenController', // name |	Name of category
+      1, // memberRoleToVote | Role ID authorised to vote
+      60, // majorityVotePerc | Majority % required for acceptance
+      15, // quorumPerc | Quorum % required for acceptance
+      [2], // allowedToCreateProposal | Role Ids allowed to create proposal
+      604800, // closingTime | 	Proposal closing time
+      '', // actionHash | IPFS hash of action to be executed
+      '', // contractAddress | Address of external contract for action execution (address appears to be ok if blank)
+      hex('TC'), // contractName | 	Contract code of internal contract for action execution
+      [0, 0, 0, 0], // other | [Minimum stake, incentives, Advisory Board % required, Is Special Resolution]
+      'updateUintParameters(bytes8,uint256)' // functionHash | Function signature
     );
 
     await submitGovernanceProposal(newCategoryCategoryId, actionHash, boardMembers, gv, secondBoardMember);
@@ -146,11 +146,10 @@ describe('upgrade minCALockTime', function () {
     console.log(`Successfully added newCategory.`);
 
     const minCALockTimeInDays = 30;
-
     actionHash = encode(
       'updateUintParameters(bytes8,uint)',
-      hex('MNCLT'),
-      minCALockTimeInDays
+      hex('MNCLT'), // bytes8 code for MNCLT. it's 0x4d4e434c54
+      minCALockTimeInDays // number in days. eg. 30
     );
 
     console.log(`Using category id ${updateUintParametersForTokenControllerCategoryId}`);
